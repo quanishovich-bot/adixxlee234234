@@ -3,7 +3,7 @@ import { Card } from './ui/Card';
 import { motion, AnimatePresence } from 'motion/react';
 import { Trophy, Target, MessageSquare, Copy, CheckCircle2, Link as LinkIcon, Youtube, Edit2, CreditCard, X, Save, Plus, Trash2, QrCode, SlidersHorizontal, Palette, Settings as SettingsIcon, Sparkles, Heart, Zap, Star, Flame, Gem, Crown, Gift, Coffee, Music, Gamepad2, Rocket, Volume2, Play, Type, Upload } from 'lucide-react';
 
-type WidgetStyle = 'glass' | 'solid' | 'neon' | 'minimal' | 'cyberpunk' | 'retro' | 'kawaii' | 'brutalist' | 'elegant' | 'electric' | 'hologram';
+type WidgetStyle = 'glass' | 'solid' | 'neon' | 'minimal' | 'brutalist';
 type AnimationType = 'none' | 'pulse' | 'bounce' | 'spin' | 'float';
 
 const STYLES: { id: WidgetStyle; label: string }[] = [
@@ -11,13 +11,7 @@ const STYLES: { id: WidgetStyle; label: string }[] = [
   { id: 'solid', label: 'Сплошной' },
   { id: 'neon', label: 'Неон' },
   { id: 'minimal', label: 'Минимализм' },
-  { id: 'cyberpunk', label: 'Киберпанк' },
-  { id: 'retro', label: 'Ретро' },
-  { id: 'kawaii', label: 'Каваи' },
   { id: 'brutalist', label: 'Брутализм' },
-  { id: 'elegant', label: 'Элегантный' },
-  { id: 'electric', label: 'Электро-рамка' },
-  { id: 'hologram', label: 'Голограмма' },
 ];
 
 const ANIMATIONS: { id: AnimationType; label: string; icon: any }[] = [
@@ -91,23 +85,20 @@ export default function Widgets() {
       title: 'Поддержать стримера', 
       phone: '+7 777 123 4567', 
       name: 'Almas B.',
-      showQr: true,
       scale: 1,
       primaryColor: '#F14635',
-      animation: 'float',
+      animation: 'none',
       fontFamily: 'Inter',
       sound: 'none',
       volume: 1
     },
     'media-orders': { 
       minAmount: 500,
-      showVideo: true,
-      mediaType: 'youtube',
-      mediaUrl: '',
-      mediaName: '',
+      showWidget: true,
+      requireModeration: true,
       scale: 1,
       primaryColor: '#F14635',
-      animation: 'pulse',
+      animation: 'none',
       fontFamily: 'Inter',
       sound: 'none',
       volume: 1
@@ -130,7 +121,7 @@ export default function Widgets() {
       period: 'all',
       scale: 1,
       primaryColor: '#F14635',
-      animation: 'bounce',
+      animation: 'none',
       fontFamily: 'Inter',
       sound: 'none',
       volume: 1
@@ -139,7 +130,7 @@ export default function Widgets() {
       showAmount: true,
       scale: 1,
       primaryColor: '#F14635',
-      animation: 'spin',
+      animation: 'none',
       fontFamily: 'Inter',
       sound: 'none',
       volume: 1
@@ -178,19 +169,17 @@ export default function Widgets() {
   const WIDGET_DEFS = [
     {
       id: 'requisites',
-      title: 'Реквизиты (QR и Карта)',
-      description: 'Выведите этот блок на экран стрима. Зрители смогут отсканировать QR-код или переписать номер для быстрого перевода.',
+      title: 'Реквизиты (Карта и Номер)',
+      description: 'Выведите этот блок на экран стрима. Зрители смогут переписать номер для быстрого перевода.',
       icon: CreditCard,
-      url: 'http://localhost:3000/widget/requisites/kaspi_12345',
       previewComp: RequisitesPreview,
       type: 'static'
     },
     {
       id: 'media-orders',
       title: 'Медиа-заказы',
-      description: 'Зрители могут прикреплять YouTube видео или GIF к донату. Появляется только при наличии медиа.',
+      description: 'Зрители могут прикреплять YouTube видео к донату. Появляется только при наличии медиа.',
       icon: Youtube,
-      url: 'http://localhost:3000/widget/media/kaspi_12345',
       previewComp: MediaOrderPreview,
       type: 'event'
     },
@@ -199,7 +188,6 @@ export default function Widgets() {
       title: 'Карта целей (Milestones)',
       description: 'Несколько целей подряд. Позволяет зрителям видеть глобальный прогресс.',
       icon: Target,
-      url: 'http://localhost:3000/widget/goals/kaspi_12345',
       previewComp: GoalMapPreview,
       type: 'static'
     },
@@ -208,20 +196,36 @@ export default function Widgets() {
       title: 'Топ донатеров',
       description: 'Отображает топ донатеров за стрим или за все время.',
       icon: Trophy,
-      url: 'http://localhost:3000/widget/top-donators/kaspi_12345',
       previewComp: TopDonatorsPreview,
       type: 'static'
     },
     {
       id: 'latest-alert',
-      title: 'Последний донат',
-      description: 'Показывает имя и сумму последнего доната. Не появляется, если донат содержит медиа-заказ.',
+      title: 'Главный алерт доната',
+      description: 'Всплывающее уведомление о новом донате по центру экрана. Показывает имя, сумму и сообщение.',
       icon: MessageSquare,
-      url: 'http://localhost:3000/widget/latest/kaspi_12345',
       previewComp: LatestAlertPreview,
       type: 'event'
     }
   ];
+
+  const getWidgetUrl = (widgetId: string) => {
+    const style = widgetStyles[widgetId] || 'glass';
+    const config = configs[widgetId] || {};
+    
+    // Map widgetId to the route type
+    const routeType = widgetId === 'requisites' ? 'requisites' :
+                      widgetId === 'media-orders' ? 'media' :
+                      widgetId === 'goal-map' ? 'goals' :
+                      widgetId === 'top-donators' ? 'top-donators' : 'latest';
+
+    const params = new URLSearchParams({
+      style,
+      config: JSON.stringify(config)
+    });
+    
+    return `${window.location.origin}/widget/${routeType}/kaspi_12345?${params.toString()}`;
+  };
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6 pb-12 relative">
@@ -238,6 +242,7 @@ export default function Widgets() {
           const currentStyle = widgetStyles[widget.id] || 'glass';
           const config = configs[widget.id] || {};
           const PreviewComp = widget.previewComp;
+          const widgetUrl = getWidgetUrl(widget.id);
           
           return (
             <Card key={widget.id} className="flex flex-col h-full bg-[#141418] border-[#222228]">
@@ -300,11 +305,11 @@ export default function Widgets() {
                   <input 
                     type="text" 
                     readOnly 
-                    value={widget.url} 
+                    value={widgetUrl} 
                     className="bg-transparent border-none outline-none flex-1 text-sm font-mono text-gray-400"
                   />
                   <button 
-                    onClick={() => handleCopy(widget.id, widget.url)}
+                    onClick={() => handleCopy(widget.id, widgetUrl)}
                     className={`flex items-center gap-2 px-5 py-2.5 rounded-lg transition-all text-sm font-bold shrink-0 ${
                       copiedId === widget.id 
                         ? 'bg-[#00E65B]/20 text-[#00E65B]' 
@@ -558,15 +563,6 @@ export default function Widgets() {
                           className="w-full bg-[#0A0A0C] border border-[#222228] rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#F14635] transition-colors"
                         />
                       </div>
-                      <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl border border-[#222228] bg-[#0A0A0C] hover:bg-[#1A1A20] transition-colors">
-                        <input 
-                          type="checkbox" 
-                          checked={configs['requisites'].showQr}
-                          onChange={(e) => updateConfig('requisites', { showQr: e.target.checked })}
-                          className="w-5 h-5 rounded border-[#222228] bg-[#141418] text-[#F14635] focus:ring-[#F14635] focus:ring-offset-[#141418]"
-                        />
-                        <span className="text-sm font-medium text-white flex items-center gap-2"><QrCode className="w-4 h-4 text-[#8E9299]"/> Показывать QR-код</span>
-                      </label>
                     </div>
                   )}
 
@@ -584,65 +580,21 @@ export default function Widgets() {
                       <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl border border-[#222228] bg-[#0A0A0C] hover:bg-[#1A1A20] transition-colors">
                         <input 
                           type="checkbox" 
-                          checked={configs['media-orders'].showVideo}
-                          onChange={(e) => updateConfig('media-orders', { showVideo: e.target.checked })}
+                          checked={configs['media-orders'].showWidget}
+                          onChange={(e) => updateConfig('media-orders', { showWidget: e.target.checked })}
                           className="w-5 h-5 rounded border-[#222228] bg-[#141418] text-[#F14635] focus:ring-[#F14635] focus:ring-offset-[#141418]"
                         />
-                        <span className="text-sm font-medium text-white flex items-center gap-2"><Youtube className="w-4 h-4 text-[#8E9299]"/> Показывать медиа-плеер</span>
+                        <span className="text-sm font-medium text-white flex items-center gap-2"><Youtube className="w-4 h-4 text-[#8E9299]"/> Показывать виджет</span>
                       </label>
-                      
-                      {configs['media-orders'].showVideo && (
-                        <div className="p-4 bg-[#0A0A0C] border border-[#222228] rounded-xl space-y-4">
-                          <label className="block text-sm font-medium text-[#8E9299] mb-2">Тестовое медиа для превью</label>
-                          <div className="flex gap-2 mb-4">
-                            <button 
-                              onClick={() => updateConfig('media-orders', { mediaType: 'youtube' })}
-                              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-colors ${configs['media-orders'].mediaType !== 'gif' ? 'bg-[#F14635] text-white' : 'bg-[#222228] text-[#8E9299] hover:text-white'}`}
-                            >
-                              YouTube
-                            </button>
-                            <button 
-                              onClick={() => updateConfig('media-orders', { mediaType: 'gif' })}
-                              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-colors ${configs['media-orders'].mediaType === 'gif' ? 'bg-[#F14635] text-white' : 'bg-[#222228] text-[#8E9299] hover:text-white'}`}
-                            >
-                              GIF / Изображение
-                            </button>
-                          </div>
-                          
-                          {configs['media-orders'].mediaType === 'gif' ? (
-                            <div>
-                              <label className="flex-1 cursor-pointer bg-[#141418] border border-[#222228] hover:border-[#F14635] rounded-xl px-4 py-3 text-white transition-colors flex items-center justify-between">
-                                <span className="text-sm truncate mr-2">
-                                  {configs['media-orders'].mediaName || 'Загрузить GIF...'}
-                                </span>
-                                <Upload className="w-4 h-4 text-[#8E9299]" />
-                                <input 
-                                  type="file" 
-                                  accept="image/gif,image/jpeg,image/png,image/webp" 
-                                  className="hidden" 
-                                  onChange={(e) => {
-                                    const file = e.target.files?.[0];
-                                    if (file) {
-                                      const reader = new FileReader();
-                                      reader.onload = (event) => {
-                                        updateConfig('media-orders', { 
-                                          mediaUrl: event.target?.result as string,
-                                          mediaName: file.name
-                                        });
-                                      };
-                                      reader.readAsDataURL(file);
-                                    }
-                                  }} 
-                                />
-                              </label>
-                            </div>
-                          ) : (
-                            <div className="text-xs text-[#8E9299] text-center p-2">
-                              Для YouTube будет отображаться стандартный плеер.
-                            </div>
-                          )}
-                        </div>
-                      )}
+                      <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl border border-[#222228] bg-[#0A0A0C] hover:bg-[#1A1A20] transition-colors">
+                        <input 
+                          type="checkbox" 
+                          checked={configs['media-orders'].requireModeration}
+                          onChange={(e) => updateConfig('media-orders', { requireModeration: e.target.checked })}
+                          className="w-5 h-5 rounded border-[#222228] bg-[#141418] text-[#F14635] focus:ring-[#F14635] focus:ring-offset-[#141418]"
+                        />
+                        <span className="text-sm font-medium text-white flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-[#8E9299]"/> Требуется модерация</span>
+                      </label>
                     </div>
                   )}
 
@@ -796,13 +748,7 @@ function getContainerStyle(theme: WidgetStyle, primaryColor: string) {
     case 'solid': return 'bg-[#1A1A20] border border-[#2A2A32] shadow-2xl text-white rounded-2xl';
     case 'neon': return `bg-black border-2 shadow-[0_0_30px_rgba(0,0,0,0.5)] text-white rounded-xl`;
     case 'minimal': return 'bg-transparent border-2 border-white/10 text-white rounded-none';
-    case 'cyberpunk': return 'bg-[#FCEE0A] border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] text-black font-mono uppercase rounded-none';
-    case 'retro': return 'bg-[#c0c0c0] border-t-4 border-l-4 border-white border-b-4 border-r-4 border-gray-800 text-black font-mono rounded-none';
-    case 'kawaii': return 'bg-[#FFE4E1] border-4 border-[#FFB6C1] rounded-[2rem] shadow-[0_8px_0_0_#FFB6C1] text-[#FF69B4] font-sans';
     case 'brutalist': return 'bg-white border-4 border-black shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] text-black font-black uppercase rounded-none';
-    case 'elegant': return 'bg-gradient-to-br from-gray-900 to-black border border-[#D4AF37] shadow-[0_10px_40px_rgba(212,175,55,0.15)] text-[#D4AF37] font-serif rounded-sm';
-    case 'electric': return 'electric-border text-white';
-    case 'hologram': return 'hologram-effect text-[#00FFFF] border border-[#00FFFF]/50 rounded-xl';
     default: return 'bg-[#141418] border border-[#222228] text-white rounded-xl';
   }
 }
@@ -871,12 +817,6 @@ const RequisitesPreview = memo(function RequisitesPreview({ themeStyle, config }
         {config.title || 'Поддержать стримера'}
       </h3>
       
-      {config.showQr && (
-        <div className={`p-4 bg-white rounded-xl shadow-inner ${themeStyle === 'cyberpunk' ? 'border-4 border-black rounded-none' : ''}`}>
-          <QrCode className="w-32 h-32 text-black" />
-        </div>
-      )}
-      
       <div className="flex flex-col items-center justify-center w-full text-center">
         <div className={`text-xs font-bold uppercase tracking-widest mb-2 opacity-70`}>Kaspi.kz</div>
         <div className={`font-mono font-bold text-3xl tracking-widest mb-2`} style={themeStyle === 'neon' ? { color: primaryColor, textShadow: `0 0 10px ${primaryColor}` } : {}}>
@@ -891,9 +831,19 @@ const RequisitesPreview = memo(function RequisitesPreview({ themeStyle, config }
 });
 
 const MediaOrderPreview = memo(function MediaOrderPreview({ themeStyle, config }: { themeStyle: WidgetStyle, config: any }) {
-  const isDarkText = ['cyberpunk', 'retro', 'brutalist'].includes(themeStyle);
+  const isDarkText = ['brutalist'].includes(themeStyle);
   const primaryColor = config.primaryColor || '#F14635';
-  const animProps = getAnimationProps(config.animation || 'none');
+  
+  // Apply specific animation based on style if not explicitly set
+  let animation = config.animation;
+  if (animation === 'none' || !animation) {
+    if (themeStyle === 'neon') animation = 'pulse';
+    else if (themeStyle === 'glass') animation = 'float';
+    else if (themeStyle === 'brutalist') animation = 'bounce';
+    else animation = 'none';
+  }
+  
+  const animProps = getAnimationProps(animation);
   const Icon = getWidgetIcon(config.widgetIcon, Music);
   
   return (
@@ -917,23 +867,17 @@ const MediaOrderPreview = memo(function MediaOrderPreview({ themeStyle, config }
         </div>
       </div>
       
-      {config.showVideo && (
-        <div className={`relative aspect-video bg-black overflow-hidden ${themeStyle === 'cyberpunk' || themeStyle === 'brutalist' || themeStyle === 'retro' ? 'border-4 border-black' : 'rounded-xl border border-white/10'}`}>
-          {config.mediaType === 'gif' && config.mediaUrl ? (
-            <img src={config.mediaUrl} alt="GIF" className="w-full h-full object-cover" />
-          ) : (
-            <>
-              <img src="https://picsum.photos/seed/gaming/600/338" alt="Video thumbnail" className="w-full h-full object-cover opacity-80" />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-14 h-14 rounded-full flex items-center justify-center shadow-2xl backdrop-blur-sm bg-black/50 border border-white/20 transition-transform hover:scale-110">
-                  <div className="w-0 h-0 border-t-[10px] border-t-transparent border-l-[16px] border-l-white border-b-[10px] border-b-transparent ml-1"></div>
-                </div>
-              </div>
-              <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-white/20">
-                <div className="h-full w-1/3" style={{ backgroundColor: primaryColor, boxShadow: themeStyle === 'neon' ? `0 0 10px ${primaryColor}` : 'none' }}></div>
-              </div>
-            </>
-          )}
+      {config.showWidget && (
+        <div className={`relative aspect-video bg-black overflow-hidden ${themeStyle === 'brutalist' ? 'border-4 border-black' : 'rounded-xl border border-white/10'}`}>
+          <img src="https://picsum.photos/seed/gaming/600/338" alt="Video thumbnail" className="w-full h-full object-cover opacity-80" />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-14 h-14 rounded-full flex items-center justify-center shadow-2xl backdrop-blur-sm bg-black/50 border border-white/20 transition-transform hover:scale-110">
+              <div className="w-0 h-0 border-t-[10px] border-t-transparent border-l-[16px] border-l-white border-b-[10px] border-b-transparent ml-1"></div>
+            </div>
+          </div>
+          <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-white/20">
+            <div className="h-full w-1/3" style={{ backgroundColor: primaryColor, boxShadow: themeStyle === 'neon' ? `0 0 10px ${primaryColor}` : 'none' }}></div>
+          </div>
         </div>
       )}
     </motion.div>
@@ -941,7 +885,7 @@ const MediaOrderPreview = memo(function MediaOrderPreview({ themeStyle, config }
 });
 
 const GoalMapPreview = memo(function GoalMapPreview({ themeStyle, config }: { themeStyle: WidgetStyle, config: any }) {
-  const isDarkText = ['cyberpunk', 'retro', 'brutalist'].includes(themeStyle);
+  const isDarkText = ['brutalist'].includes(themeStyle);
   const primaryColor = config.primaryColor || '#F14635';
   const goals = config.goals || [];
   const animProps = getAnimationProps(config.animation || 'none');
@@ -972,12 +916,12 @@ const GoalMapPreview = memo(function GoalMapPreview({ themeStyle, config }: { th
               </div>
               
               {/* Card */}
-              <div className={`w-[calc(100%-3rem)] md:w-[calc(50%-1.5rem)] p-4 shadow-md ${themeStyle === 'cyberpunk' || themeStyle === 'brutalist' || themeStyle === 'retro' ? 'border-2 border-black' : 'rounded-xl border border-white/10'} ${isDarkText ? 'bg-white/80' : 'bg-black/40 backdrop-blur-md'}`}>
+              <div className={`w-[calc(100%-3rem)] md:w-[calc(50%-1.5rem)] p-4 shadow-md ${themeStyle === 'brutalist' ? 'border-2 border-black' : 'rounded-xl border border-white/10'} ${isDarkText ? 'bg-white/80' : 'bg-black/40 backdrop-blur-md'}`}>
                 <div className="flex justify-between items-center mb-2">
                   <span className={`font-bold text-sm ${isDone ? 'opacity-50 line-through' : ''}`}>{g.title}</span>
                   <span className="text-xs font-mono font-bold" style={{ color: isDone ? 'inherit' : primaryColor }}>{percent}%</span>
                 </div>
-                <div className={`h-2 overflow-hidden ${themeStyle === 'cyberpunk' || themeStyle === 'brutalist' || themeStyle === 'retro' ? 'border border-black' : 'rounded-full'} ${isDarkText ? 'bg-black/10' : 'bg-white/10'}`}>
+                <div className={`h-2 overflow-hidden ${themeStyle === 'brutalist' ? 'border border-black' : 'rounded-full'} ${isDarkText ? 'bg-black/10' : 'bg-white/10'}`}>
                   <div className={`h-full transition-all duration-1000`} style={{ width: `${percent}%`, backgroundColor: isDone ? (isDarkText ? '#888' : '#555') : primaryColor, boxShadow: themeStyle === 'neon' && !isDone ? `0 0 10px ${primaryColor}` : 'none' }}></div>
                 </div>
                 <div className={`text-xs font-mono mt-2 text-right ${isDarkText ? 'opacity-80 font-bold' : 'text-gray-400'}`}>
@@ -993,7 +937,7 @@ const GoalMapPreview = memo(function GoalMapPreview({ themeStyle, config }: { th
 });
 
 const TopDonatorsPreview = memo(function TopDonatorsPreview({ themeStyle, config }: { themeStyle: WidgetStyle, config: any }) {
-  const isDarkText = ['cyberpunk', 'retro', 'brutalist'].includes(themeStyle);
+  const isDarkText = ['brutalist'].includes(themeStyle);
   const primaryColor = config.primaryColor || '#F14635';
   const animProps = getAnimationProps(config.animation || 'none');
   const Icon = getWidgetIcon(config.widgetIcon, Trophy);
@@ -1025,7 +969,7 @@ const TopDonatorsPreview = memo(function TopDonatorsPreview({ themeStyle, config
       </h3>
       <div className="space-y-3">
         {donators.map((d, i) => (
-          <div key={i} className={`flex items-center justify-between p-3 shadow-sm ${themeStyle === 'cyberpunk' || themeStyle === 'brutalist' || themeStyle === 'retro' ? 'border-2 border-black' : 'rounded-xl border border-white/10'} ${isDarkText ? 'bg-white/80' : 'bg-black/40 backdrop-blur-md'}`}>
+          <div key={i} className={`flex items-center justify-between p-3 shadow-sm ${themeStyle === 'brutalist' ? 'border-2 border-black' : 'rounded-xl border border-white/10'} ${isDarkText ? 'bg-white/80' : 'bg-black/40 backdrop-blur-md'}`}>
             <div className="flex items-center gap-4">
               <div className="w-8 h-8 rounded-full flex items-center justify-center font-black text-sm shadow-inner" style={{ backgroundColor: `${d.color}20`, color: d.color, border: `2px solid ${d.color}60` }}>
                 {i + 1}
@@ -1041,7 +985,7 @@ const TopDonatorsPreview = memo(function TopDonatorsPreview({ themeStyle, config
 });
 
 const LatestAlertPreview = memo(function LatestAlertPreview({ themeStyle, config }: { themeStyle: WidgetStyle, config: any }) {
-  const isDarkText = ['cyberpunk', 'retro', 'brutalist'].includes(themeStyle);
+  const isDarkText = ['brutalist'].includes(themeStyle);
   const primaryColor = config.primaryColor || '#F14635';
   const animProps = getAnimationProps(config.animation || 'none');
   const Icon = getWidgetIcon(config.widgetIcon, MessageSquare);
@@ -1049,22 +993,40 @@ const LatestAlertPreview = memo(function LatestAlertPreview({ themeStyle, config
   return (
     <motion.div 
       {...animProps}
-      className={`w-full max-w-sm p-5 flex items-center gap-4 ${getContainerStyle(themeStyle, primaryColor)}`}
+      className={`w-full max-w-md p-8 flex flex-col items-center text-center gap-6 ${getContainerStyle(themeStyle, primaryColor)}`}
       style={{
         fontFamily: config.fontFamily || 'Inter',
         ...(themeStyle === 'neon' ? { borderColor: primaryColor, boxShadow: `0 0 20px ${primaryColor}40, inset 0 0 10px ${primaryColor}20` } : {})
       }}
     >
-      <div className="w-12 h-12 rounded-full border-2 flex items-center justify-center shrink-0 shadow-lg" style={{ borderColor: primaryColor, backgroundColor: `${primaryColor}20`, color: primaryColor }}>
-        <Icon className="w-6 h-6" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className={`text-xs font-bold uppercase tracking-widest mb-1 ${isDarkText ? 'opacity-70' : 'text-gray-400'}`}>Последний донат</div>
-        <div className="flex items-baseline justify-between gap-3 truncate">
-          <span className={`font-bold text-lg truncate ${isDarkText ? '' : 'text-white'}`} style={themeStyle === 'neon' ? { textShadow: `0 0 10px ${primaryColor}` } : {}}>Zhanar</span>
+      <motion.div 
+        initial={{ scale: 0, rotate: -180 }}
+        animate={{ scale: 1, rotate: 0 }}
+        transition={{ type: "spring", duration: 1, bounce: 0.5 }}
+        className="w-20 h-20 rounded-full border-4 flex items-center justify-center shrink-0 shadow-[0_0_30px_rgba(0,0,0,0.3)]" 
+        style={{ borderColor: primaryColor, backgroundColor: `${primaryColor}20`, color: primaryColor }}
+      >
+        <Icon className="w-10 h-10" />
+      </motion.div>
+      
+      <div className="flex flex-col items-center w-full">
+        <div className={`text-xs font-bold uppercase tracking-widest mb-2 ${isDarkText ? 'opacity-70' : 'text-gray-400'}`}>
+          Новый донат!
+        </div>
+        
+        <div className="flex flex-col items-center gap-1 mb-4">
+          <span className={`font-black text-2xl truncate ${isDarkText ? '' : 'text-white'}`} style={themeStyle === 'neon' ? { textShadow: `0 0 10px ${primaryColor}` } : {}}>
+            Zhanar
+          </span>
           {config.showAmount !== false && (
-            <span className="font-mono font-bold text-lg shrink-0" style={{ color: primaryColor, textShadow: themeStyle === 'neon' ? `0 0 10px ${primaryColor}` : 'none' }}>2 000 ₸</span>
+            <span className="font-mono font-black text-3xl" style={{ color: primaryColor, textShadow: themeStyle === 'neon' ? `0 0 10px ${primaryColor}` : 'none' }}>
+              2 000 ₸
+            </span>
           )}
+        </div>
+
+        <div className={`mt-2 p-4 rounded-xl w-full text-base leading-relaxed break-words ${themeStyle === 'brutalist' ? 'border-4 border-black bg-white text-black font-bold' : 'bg-black/20 border border-white/10'} ${isDarkText && themeStyle !== 'brutalist' ? 'text-black' : 'text-white'}`}>
+          Привет! Отличный стрим, продолжай в том же духе!
         </div>
       </div>
     </motion.div>

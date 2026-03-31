@@ -1,12 +1,18 @@
 import { useState } from 'react';
-import { LayoutDashboard, ListOrdered, Palette, Volume2, Settings as SettingsIcon, MonitorPlay, Server, LayoutTemplate, Menu } from 'lucide-react';
-import { motion } from 'motion/react';
+import { Routes, Route } from 'react-router-dom';
+import { LayoutDashboard, ListOrdered, Palette, Volume2, Settings as SettingsIcon, MonitorPlay, Server, LayoutTemplate, Menu, User } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import Dashboard from './components/Dashboard';
 import Queue from './components/Queue';
 import Appearance from './components/Appearance';
 import AudioTTS from './components/AudioTTS';
 import Settings from './components/Settings';
 import Widgets from './components/Widgets';
+import LoginScreen from './components/LoginScreen';
+import Profile from './components/Profile';
+import WidgetRenderer from './components/WidgetRenderer';
+
+import { SocketProvider } from './lib/SocketContext';
 
 const AnimatedLogo = () => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-white">
@@ -43,7 +49,8 @@ const AnimatedLogo = () => (
   </svg>
 );
 
-export default function App() {
+function MainDashboard() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -53,8 +60,13 @@ export default function App() {
     { id: 'queue', label: 'История', icon: ListOrdered },
     { id: 'appearance', label: 'Внешний вид', icon: Palette },
     { id: 'audio', label: 'Аудио', icon: Volume2 },
+    { id: 'profile', label: 'Профиль', icon: User },
     { id: 'settings', label: 'Настройки', icon: SettingsIcon },
   ];
+
+  if (!isLoggedIn) {
+    return <LoginScreen onLogin={() => setIsLoggedIn(true)} />;
+  }
 
   return (
     <div className="flex h-screen bg-[#0A0A0C] text-white overflow-hidden font-sans">
@@ -171,6 +183,7 @@ export default function App() {
             {activeTab === 'queue' && <Queue />}
             {activeTab === 'appearance' && <Appearance />}
             {activeTab === 'audio' && <AudioTTS />}
+            {activeTab === 'profile' && <Profile onLogout={() => setIsLoggedIn(false)} />}
             {activeTab === 'settings' && <Settings />}
           </div>
         </main>
@@ -196,5 +209,16 @@ export default function App() {
         </nav>
       </div>
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <SocketProvider>
+      <Routes>
+        <Route path="/widget/:type/:id" element={<WidgetRenderer />} />
+        <Route path="*" element={<MainDashboard />} />
+      </Routes>
+    </SocketProvider>
   );
 }

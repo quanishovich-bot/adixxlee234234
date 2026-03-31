@@ -2,21 +2,25 @@ import { useState } from 'react';
 import { Card } from './ui/Card';
 import { Play, Pause, RotateCcw, SkipForward, Trash2, MessageSquare } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-
-const MOCK_DONATIONS = [
-  { id: 1, name: 'DarkSlayer99', amount: 5000, message: 'Отличный стрим, продолжай в том же духе!', time: '22:42', status: 'played' },
-  { id: 2, name: 'Anna K.', amount: 1000, message: 'Привет из Алматы!', time: '22:45', status: 'played' },
-  { id: 3, name: 'Аноним', amount: 500, message: '', time: '22:48', status: 'queued' },
-  { id: 4, name: 'GamerBoy', amount: 15000, message: 'На новую видеокарту бро', time: '22:50', status: 'queued' },
-];
+import { useSocket } from '../lib/SocketContext';
 
 export default function Queue() {
   const [isPaused, setIsPaused] = useState(false);
-  const [donations, setDonations] = useState(MOCK_DONATIONS);
+  const { donations } = useSocket();
 
-  const removeDonation = (id: number) => {
-    setDonations(donations.filter(d => d.id !== id));
+  // In a real app, you'd want to manage local state for removing/skipping items 
+  // or send a request to the backend to delete them. For now, we'll just display them.
+  const [hiddenIds, setHiddenIds] = useState<Set<string>>(new Set());
+
+  const removeDonation = (id: string) => {
+    setHiddenIds(prev => {
+      const newSet = new Set(prev);
+      newSet.add(id);
+      return newSet;
+    });
   };
+
+  const visibleDonations = donations.filter(d => !hiddenIds.has(d.id));
 
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6 h-full flex flex-col">
@@ -50,20 +54,22 @@ export default function Queue() {
         
         <div className="overflow-y-auto flex-1 p-2 space-y-2">
           <AnimatePresence>
-            {donations.map((donation) => (
+            {visibleDonations.map((donation) => {
+              const date = new Date(donation.timestamp);
+              const timeString = `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+              
+              return (
               <motion.div 
                 key={donation.id}
                 layout
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className={`grid grid-cols-12 gap-4 p-4 rounded-xl items-center transition-colors ${
-                  donation.status === 'queued' ? 'bg-[#1A1A20] border border-[#222228]' : 'bg-transparent hover:bg-[#1A1A20]/50'
-                }`}
+                className={`grid grid-cols-12 gap-4 p-4 rounded-xl items-center transition-colors bg-[#1A1A20] border border-[#222228]`}
               >
-                <div className="col-span-2 text-sm text-[#8E9299] font-mono">{donation.time}</div>
+                <div className="col-span-2 text-sm text-[#8E9299] font-mono">{timeString}</div>
                 <div className="col-span-3">
-                  <div className="font-bold text-white">{donation.name}</div>
+                  <div className="font-bold text-white">{donation.sender}</div>
                   <div className="text-[#F14635] font-mono font-medium">{donation.amount.toLocaleString()} ₸</div>
                 </div>
                 <div className="col-span-4 flex items-start gap-2">
@@ -83,29 +89,20 @@ export default function Queue() {
                   >
                     <RotateCcw className="w-4 h-4" />
                   </button>
-                  {donation.status === 'queued' && (
-                    <button 
-                      onClick={() => removeDonation(donation.id)}
-                      className="p-2 rounded-lg bg-[#222228] hover:bg-[#FFB020]/20 text-[#FFB020] transition-colors"
-                      title="Пропустить алерт"
-                    >
-                      <SkipForward className="w-4 h-4" />
-                    </button>
-                  )}
                   <button 
                     onClick={() => removeDonation(donation.id)}
                     className="p-2 rounded-lg bg-[#222228] hover:bg-[#FF4444]/20 text-[#FF4444] transition-colors"
-                    title="Удалить"
+                    title="Скрыть"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
               </motion.div>
-            ))}
+            )})}
           </AnimatePresence>
-          {donations.length === 0 && (
+          {visibleDonations.length === 0 && (
             <div className="text-center py-12 text-[#8E9299]">
-              Нет донатов в очереди.
+              Нет донатов в истории.
             </div>
           )}
         </div>

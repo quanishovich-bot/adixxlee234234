@@ -1,16 +1,64 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card } from './ui/Card';
-import { Copy, CheckCircle2, XCircle, Play, Link as LinkIcon, AlertTriangle } from 'lucide-react';
+import { Copy, CheckCircle2, XCircle, Play, Link as LinkIcon, AlertTriangle, Smartphone } from 'lucide-react';
 import { motion } from 'motion/react';
+import { useSocket } from '../lib/SocketContext';
 
 export default function Dashboard() {
   const [copied, setCopied] = useState(false);
-  const overlayUrl = "http://localhost:3000/overlay/kaspi_12345";
+  const { donations, isConnected, socket } = useSocket();
+  const overlayUrl = `${window.location.origin}/widget/latest/kaspi_12345`;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(overlayUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const totalCollected = useMemo(() => {
+    return donations.reduce((sum, d) => sum + d.amount, 0);
+  }, [donations]);
+
+  const topDonator = useMemo(() => {
+    if (donations.length === 0) return null;
+    const totals = donations.reduce((acc, d) => {
+      acc[d.sender] = (acc[d.sender] || 0) + d.amount;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    let maxSender = '';
+    let maxAmount = 0;
+    for (const [sender, amount] of Object.entries(totals)) {
+      if (amount > maxAmount) {
+        maxAmount = amount;
+        maxSender = sender;
+      }
+    }
+    return { sender: maxSender, amount: maxAmount };
+  }, [donations]);
+
+  const latestDonation = donations[0];
+
+  const sendTestDonation = async () => {
+    try {
+      await fetch('/api/webhooks/kaspi', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: Math.floor(Math.random() * 5000) + 500,
+          sender: 'Тестовый Зритель',
+          message: 'Это тестовый донат для проверки! https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+        })
+      });
+    } catch (error) {
+      console.error('Failed to send test donation', error);
+    }
+  };
+
+  const skipMedia = () => {
+    if (socket) {
+      socket.emit('skip_media');
+    }
   };
 
   return (
@@ -24,20 +72,20 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>
           <div className="text-[#8E9299] text-sm font-medium uppercase tracking-wider mb-2">Собрано сегодня</div>
-          <div className="text-4xl font-mono font-bold text-white">145 500 <span className="text-xl text-[#F14635]">₸</span></div>
+          <div className="text-4xl font-mono font-bold text-white">{totalCollected.toLocaleString()} <span className="text-xl text-[#F14635]">₸</span></div>
           <div className="mt-2 text-sm text-[#00E65B] flex items-center gap-1">
-            <span>+12% с прошлого стрима</span>
+            <span>В реальном времени</span>
           </div>
         </Card>
         <Card>
           <div className="text-[#8E9299] text-sm font-medium uppercase tracking-wider mb-2">Топ донатер</div>
-          <div className="text-2xl font-bold text-white truncate">Almas B.</div>
-          <div className="mt-1 text-lg font-mono text-[#8E9299]">50 000 ₸</div>
+          <div className="text-2xl font-bold text-white truncate">{topDonator ? topDonator.sender : 'Нет данных'}</div>
+          <div className="mt-1 text-lg font-mono text-[#8E9299]">{topDonator ? `${topDonator.amount.toLocaleString()} ₸` : '0 ₸'}</div>
         </Card>
         <Card>
           <div className="text-[#8E9299] text-sm font-medium uppercase tracking-wider mb-2">Последний донат</div>
-          <div className="text-2xl font-bold text-white truncate">Zhanar</div>
-          <div className="mt-1 text-lg font-mono text-[#8E9299]">2 000 ₸</div>
+          <div className="text-2xl font-bold text-white truncate">{latestDonation ? latestDonation.sender : 'Нет данных'}</div>
+          <div className="mt-1 text-lg font-mono text-[#8E9299]">{latestDonation ? `${latestDonation.amount.toLocaleString()} ₸` : '0 ₸'}</div>
         </Card>
       </div>
 
@@ -46,9 +94,8 @@ export default function Dashboard() {
         <Card className="flex flex-col lg:col-span-1">
           <h2 className="text-lg font-semibold mb-6">Статус системы</h2>
           <div className="space-y-6 flex-1">
-            <StatusItem label="Перехват уведомлений Windows" status="active" />
-            <StatusItem label="Локальный веб-сервер" status="active" />
-            <StatusItem label="Подключение к OBS (WebSocket)" status="error" errorMsg="OBS не запущен или WebSocket выключен" />
+            <StatusItem label="Подключение к серверу" status={isConnected ? "active" : "error"} errorMsg={!isConnected ? "Соединение потеряно" : undefined} />
+            <StatusItem label="Связь с телефоном (Kaspi)" status="active" />
           </div>
         </Card>
 
@@ -78,9 +125,13 @@ export default function Dashboard() {
           </div>
 
           <div className="mt-auto pt-6 border-t border-[#222228] flex gap-4">
-            <button className="flex-1 flex items-center justify-center gap-2 bg-[#F14635] hover:bg-[#D93E2F] text-white py-3 rounded-xl font-semibold transition-all shadow-[0_4px_14px_rgba(241,70,53,0.3)] hover:shadow-[0_6px_20px_rgba(241,70,53,0.4)]">
+            <button onClick={sendTestDonation} className="flex-1 flex items-center justify-center gap-2 bg-[#F14635] hover:bg-[#D93E2F] text-white py-3 rounded-xl font-semibold transition-all shadow-[0_4px_14px_rgba(241,70,53,0.3)] hover:shadow-[0_6px_20px_rgba(241,70,53,0.4)]">
               <Play className="w-5 h-5 fill-current" />
               Отправить тестовый донат
+            </button>
+            <button onClick={skipMedia} className="flex-1 flex items-center justify-center gap-2 bg-[#222228] hover:bg-[#2A2A32] text-white py-3 rounded-xl font-semibold transition-all border border-[#33333C]">
+              <XCircle className="w-5 h-5" />
+              Пропустить медиа
             </button>
           </div>
         </Card>
